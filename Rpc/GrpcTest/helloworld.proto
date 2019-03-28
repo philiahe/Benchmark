@@ -1,0 +1,13 @@
+﻿syntax = "proto3";
+package GrpcTest;
+service Helloworld {
+  rpc SayHello (SayHelloArgs) returns (SayHelloResultArgs) {}
+}
+
+message SayHelloArgs {
+  string name = 1;
+}
+
+message SayHelloResultArgs {
+  string message = 1;
+}
