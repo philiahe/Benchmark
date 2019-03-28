@@ -1,6 +1,7 @@
 ﻿using Common;
 using Grpc.Core;
 using GrpcTest;
+using Microsoft.Extensions.Configuration;
 using System;
 
 namespace Test
@@ -9,14 +10,17 @@ namespace Test
     {
         static void Main(string[] args)
         {
-            string ip = NetworkHelper.GetLocalIp();
+            IConfiguration configuration = new ConfigurationBuilder().AddJsonFile($"appsettings.json").Build();
+            var times = Convert.ToInt32(configuration["Times"]); 
+            int threadCount = Convert.ToInt32(configuration["ThreadCount"]);
 
+            string ip = NetworkHelper.GetLocalIp();
             Channel channel = new Channel($"{ip}:32000", ChannelCredentials.Insecure);
-            CodeTimerPro.Start("gRpc", 1000, p =>
+            CodeTimerPro.Start("gRpc", times, p =>
             {
                 var client = new Helloworld.HelloworldClient(channel);
                 var result = client.SayHello(new GrpcTest.SayHelloArgs { Name = "philia" + p });
-            }, 10);
+            }, threadCount);
 
             channel.ShutdownAsync().Wait();
 
