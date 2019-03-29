@@ -68,14 +68,10 @@ namespace Common
                 Process.GetCurrentProcess().PriorityClass = ProcessPriorityClass.High;
                 Thread.CurrentThread.Priority = ThreadPriority.Highest;
 
-                StartProgress();
-
                 TimeReal(threadCount);
             }
             finally
             {
-                StopProgress();
-
                 Thread.CurrentThread.Priority = tp;
                 Process.GetCurrentProcess().PriorityClass = pp;
             }
@@ -191,63 +187,6 @@ namespace Common
         public override string ToString()
         {
             return String.Format("\tExcute Time:\t{0,7:n0}ms\r\n \tThread Time:\t{1,7:n0}ms\r\n \tCpuCycles:\t{2,17:n0}\r\n \tGC[Gen]:\t{3,6}/{4}/{5}\r\n", Elapsed.TotalMilliseconds, ThreadTime / 10000, CpuCycles, Gen[0], Gen[1], Gen[2]);
-        }
-
-        Thread _thread;
-        void StartProgress()
-        {
-            if (!ShowProgress) return;
-
-            // 使用低优先级线程显示进度
-            _thread = new Thread(Progress)
-            {
-                IsBackground = true,
-                Priority = ThreadPriority.BelowNormal
-            };
-            _thread.Start();
-        }
-
-        void StopProgress()
-        {
-            if (_thread != null && _thread.IsAlive)
-            {
-                //_thread.Abort();
-                _thread.Join(3000);
-            }
-        }
-
-        void Progress(Object state)
-        {
-            Int32 left = Console.CursorLeft;
-
-            // 设置光标不可见
-            Boolean cursorVisible = Console.CursorVisible;
-            Console.CursorVisible = false;
-
-            Stopwatch sw = new Stopwatch();
-            sw.Start();
-            while (true)
-            {
-                try
-                {
-                    Int32 i = Index;
-                    if (i >= Times) break;
-
-                    if (i > 0 && sw.Elapsed.TotalMilliseconds > 10)
-                    {
-                        Double d = (Double)i / Times;
-                        Console.Write("{0,7:n0}ms {1:p}", sw.Elapsed.TotalMilliseconds, d);
-                        Console.CursorLeft = left;
-                    }
-                }
-                catch { break; }
-
-                Thread.Sleep(500);
-            }
-            sw.Stop();
-
-            Console.CursorLeft = left;
-            Console.CursorVisible = cursorVisible;
         }
 
         #endregion

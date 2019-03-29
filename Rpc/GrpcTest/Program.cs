@@ -31,7 +31,7 @@ namespace GrpcTest
         {
             Console.WriteLine(args.Name);
 
-            return Task.FromResult(new SayHelloResultArgs { Message = "Hello " + args.Name });
+            return Task.FromResult(new SayHelloResultArgs { Message = $"Hello {args.Name}" });
         }
     }
 }
