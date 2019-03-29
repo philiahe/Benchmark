@@ -7,6 +7,7 @@ using Microsoft.AspNetCore;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
+using Common;
 
 namespace WebApiTest
 {
@@ -19,6 +20,7 @@ namespace WebApiTest
 
         public static IWebHostBuilder CreateWebHostBuilder(string[] args) =>
             WebHost.CreateDefaultBuilder(args)
+                .UseUrlPort(args)
                 .UseStartup<Startup>();
     }
 }

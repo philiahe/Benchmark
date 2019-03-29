@@ -13,13 +13,14 @@ using System.Collections.Generic;
 using System.Net;
 using System.Net.Http;
 using System.Net.Http.Headers;
+using System.Text;
 using System.Threading.Tasks;
 
 namespace Test
 {
     class Program
     {
-        static string LocalIp;
+        static string LocalIp = NetworkHelper.GetLocalIp();
         static int Times;
         static int ThreadCount;
         static Common.SayHelloArgs CommonArgs = new Common.SayHelloArgs { Name = "philia" };
@@ -29,13 +30,13 @@ namespace Test
             IConfiguration configuration = new ConfigurationBuilder().AddJsonFile($"appsettings.json").Build();
             Times = Convert.ToInt32(configuration["Times"]);
             ThreadCount = Convert.ToInt32(configuration["ThreadCount"]);
-            LocalIp = NetworkHelper.GetLocalIp();
 
             //Grpc();
 
             //Orleans();
 
-            HttpClient();
+            //HttpClient();
+            HttpWebRequest();
 
             Console.ReadKey();
         }
@@ -57,7 +58,7 @@ namespace Test
             var client = new Helloworld.HelloworldClient(channel);
             var args = new GrpcTest.SayHelloArgs { Name = "philia" };
 
-            CodeTimerPro.Start("gRpc", Times, p =>
+            CodeTimerPro.Start("Grpc", Times, p =>
             {
                 var result = client.SayHello(args);
             }, ThreadCount);
@@ -85,7 +86,7 @@ namespace Test
             using (var client = await OrleansClient())
             {
                 var friend = client.GetGrain<IHello>(0);
-                CodeTimerPro.Start("orleans", Times, async p =>
+                CodeTimerPro.Start("Orleans", Times, async _ =>
                 {
                     var result = await friend.SayHello(CommonArgs);
                         //Console.WriteLine(result.Message);
@@ -102,7 +103,7 @@ namespace Test
             IClusterClient client;
             client = new ClientBuilder()
                 .UseLocalhostClustering()
-                .Configure<EndpointOptions>(options => { options.AdvertisedIPAddress = IPAddress.Parse(NetworkHelper.GetLocalIp()); })
+                .Configure<EndpointOptions>(options => { options.AdvertisedIPAddress = IPAddress.Parse(LocalIp); })
                 .ConfigureLogging(logging => logging.AddConsole())
                 .Build();
 
@@ -121,13 +122,36 @@ namespace Test
             var byteContent = new ByteArrayContent(buffer);
             byteContent.Headers.ContentType = new MediaTypeHeaderValue("application/json");
 
-            CodeTimerPro.Start("httpclient", Times, p =>
+            CodeTimerPro.Start("HttpClient", Times, _ =>
             {
-                var result = client.PostAsync($"http://localhost:5000/api/Values", byteContent).Result.Content.ReadAsStringAsync().Result;
+                var response = client.PostAsync($"http://{LocalIp}:5010/api/Values", byteContent);
+                var result = response.Result.Content.ReadAsStringAsync().Result;
+            }, ThreadCount);
+        }
+
+        static void HttpWebRequest()
+        {
+            string url = $"http://{LocalIp}:5010/api/Values";
+           
+            CodeTimerPro.Start("HttpWebRequest", Times, _ =>
+            {
+                HttpWebRequest webRequest = (HttpWebRequest)WebRequest.Create(new Uri(url));
+                webRequest.Method = "post";
+                webRequest.ContentType = "application/application/json";
+                string postData = "Name=philia";
+                byte[] byteArray = Encoding.UTF8.GetBytes(postData);
+                webRequest.ContentLength = byteArray.Length;
+                System.IO.Stream newStream = webRequest.GetRequestStream();
+                newStream.Write(byteArray, 0, byteArray.Length);
+                newStream.Close();
+                HttpWebResponse response = (HttpWebResponse)webRequest.GetResponse();
+                string result = new System.IO.StreamReader(response.GetResponseStream(), Encoding.GetEncoding("utf-8")).ReadToEnd();
             }, ThreadCount);
         }
 
         #endregion
+
+
 
     }
 }
