@@ -4,11 +4,15 @@ using GrpcTest;
 using HelloWorld.Interfaces;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
+using Newtonsoft.Json;
 using Orleans;
 using Orleans.Configuration;
 using Orleans.Runtime;
 using System;
+using System.Collections.Generic;
 using System.Net;
+using System.Net.Http;
+using System.Net.Http.Headers;
 using System.Threading.Tasks;
 
 namespace Test
@@ -17,23 +21,27 @@ namespace Test
     {
         static string LocalIp;
         static int Times;
-        static int threadCount;
+        static int ThreadCount;
+        static Common.SayHelloArgs CommonArgs = new Common.SayHelloArgs { Name = "philia" };
 
-        static void Main(string[] args)
+    static void Main(string[] args)
         {
             IConfiguration configuration = new ConfigurationBuilder().AddJsonFile($"appsettings.json").Build();
             Times = Convert.ToInt32(configuration["Times"]);
-            threadCount = Convert.ToInt32(configuration["ThreadCount"]);
+            ThreadCount = Convert.ToInt32(configuration["ThreadCount"]);
             LocalIp = NetworkHelper.GetLocalIp();
 
             //Grpc();
 
-            Orleans();
+            //Orleans();
+
+            HttpClient();
 
             Console.ReadKey();
         }
 
         #region -- Grpc --
+
         /// <summary>
         /// Grpc
         /// </summary>
@@ -47,11 +55,12 @@ namespace Test
         {
             Channel channel = new Channel($"{LocalIp}:32000", ChannelCredentials.Insecure);
             var client = new Helloworld.HelloworldClient(channel);
+            var args = new GrpcTest.SayHelloArgs { Name = "philia" };
 
             CodeTimerPro.Start("gRpc", Times, p =>
             {
-                var result = client.SayHello(new GrpcTest.SayHelloArgs { Name = "philia" + p });
-            }, threadCount);
+                var result = client.SayHello(args);
+            }, ThreadCount);
 
             channel.ShutdownAsync().Wait();
         }
@@ -73,31 +82,22 @@ namespace Test
 
         private static async Task<int> RunMainAsync()
         {
-            try
+            using (var client = await OrleansClient())
             {
-                using (var client = await StartClientWithRetries())
+                var friend = client.GetGrain<IHello>(0);
+                CodeTimerPro.Start("orleans", Times, async p =>
                 {
-                    var friend = client.GetGrain<IHello>(0);
-                    CodeTimerPro.Start("Orleans", Times, async p =>
-                    {
-                        var result = await friend.SayHello(new Common.SayHelloArgs { Name = "philia" + p });
+                    var result = await friend.SayHello(CommonArgs);
                         //Console.WriteLine(result.Message);
-                    }, threadCount);
+                }, ThreadCount);
 
-                    Console.ReadKey();
-                }
-
-                return 0;
-            }
-            catch (Exception e)
-            {
-                Console.WriteLine(e);
                 Console.ReadKey();
-                return 1;
             }
+
+            return 1;
         }
 
-        private static async Task<IClusterClient> StartClientWithRetries()
+        private static async Task<IClusterClient> OrleansClient()
         {
             IClusterClient client;
             client = new ClientBuilder()
@@ -112,6 +112,22 @@ namespace Test
 
         #endregion
 
+        #region -- WebApi --
+
+        static void HttpClient()
+        {
+            var client = new HttpClient();
+            var buffer = System.Text.Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(CommonArgs));
+            var byteContent = new ByteArrayContent(buffer);
+            byteContent.Headers.ContentType = new MediaTypeHeaderValue("application/json");
+
+            CodeTimerPro.Start("httpclient", Times, p =>
+            {
+                var result = client.PostAsync($"http://localhost:5000/api/Values", byteContent).Result.Content.ReadAsStringAsync().Result;
+            }, ThreadCount);
+        }
+
+        #endregion
 
     }
 }

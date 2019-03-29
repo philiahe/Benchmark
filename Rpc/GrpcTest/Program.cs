@@ -29,7 +29,7 @@ namespace GrpcTest
     {
         public override Task<SayHelloResultArgs> SayHello(SayHelloArgs args, ServerCallContext context)
         {
-            Console.WriteLine(args.Name);
+            //Console.WriteLine(args.Name);
 
             return Task.FromResult(new SayHelloResultArgs { Message = $"Hello {args.Name}" });
         }
