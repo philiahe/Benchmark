@@ -21,13 +21,16 @@ using System.Net;
 using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
+using Thrift.Protocol;
+using Thrift.Transport;
 
 namespace Test
 {
     class Program
     {
-        static string LocalIp = NetworkHelper.GetLocalIp();
+        static string ServerIp = "";
         static int Times;
         static int ThreadCount;
         static Common.SayHelloArgs CommonArgs = new Common.SayHelloArgs { Name = "philia" };
@@ -42,10 +45,12 @@ namespace Test
 
             //Orleans();
 
+            //DotNettyTest();
+
+            Thrift();
+
             //HttpClient();
             //HttpWebRequest();
-
-            DotNettyTest();
 
             Console.ReadKey();
         }
@@ -135,6 +140,23 @@ namespace Test
 
         #endregion
 
+        #region -- Thrift --
+        static void Thrift()
+        {
+            CodeTimerPro.Start("thrift", Times, _ =>
+            {
+                TTransport transport = new TSocket("127.0.0.1", 32040);
+                transport.Open();
+                TProtocol protocol = new TBinaryProtocol(transport);
+                using (Helloword.Client client = new Helloword.Client(protocol))
+                {
+                    var reply = client.SayHello(new SayHelloArgs { Name = "philia" });
+                }
+                transport.Close();
+            }, ThreadCount);
+        }
+
+        #endregion
 
         #region -- WebApi --
 
@@ -173,8 +195,6 @@ namespace Test
         }
 
         #endregion
-
-
 
     }
 }

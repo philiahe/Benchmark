@@ -19,6 +19,7 @@ namespace DotNettyTest
             RPCServer rPCServer = new RPCServer(32030);
             rPCServer.RegisterService<IHello, Hello>();
             rPCServer.Start();
+            Console.WriteLine($"RpcServer started on {32030}");
 
             Console.ReadLine();
         }

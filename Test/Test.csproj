@@ -33,6 +33,7 @@
     <ProjectReference Include="..\Rpc\DotNettyTest\DotNettyTest.csproj" />
     <ProjectReference Include="..\Rpc\GrpcTest\GrpcTest.csproj" />
     <ProjectReference Include="..\Rpc\OrleansTest\OrleansTest.csproj" />
+    <ProjectReference Include="..\Rpc\ThriftTest\ThriftTest.csproj" />
   </ItemGroup>
 
   <ItemGroup>
