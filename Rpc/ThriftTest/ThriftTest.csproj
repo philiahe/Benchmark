@@ -9,4 +9,8 @@
     <PackageReference Include="apache-thrift-netcore" Version="0.9.3.2" />
   </ItemGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\..\Common\Common.csproj" />
+  </ItemGroup>
+
 </Project>

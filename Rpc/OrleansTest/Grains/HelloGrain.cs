@@ -10,6 +10,7 @@ namespace HelloWorld.Grains
     /// </summary>
     public class HelloGrain : Orleans.Grain, IHello
     {
+        static int Count = 0;
         private readonly ILogger logger;
 
         public HelloGrain(ILogger<HelloGrain> logger)
@@ -19,7 +20,8 @@ namespace HelloWorld.Grains
 
         Task<SayHelloResultArgs> IHello.SayHello(SayHelloArgs args)
         {
-            logger.LogInformation($"SayHello message received: greeting = '{args}'");
+            //logger.LogInformation($"SayHello message received: greeting = '{args}'");
+            //logger.LogInformation(args.Name + Count++);
 
             return Task.FromResult(new SayHelloResultArgs { Message = $"Hello {args.Name}" });
         }

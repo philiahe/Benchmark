@@ -16,11 +16,11 @@ namespace DotNettyTest
     {
         static void Main(string[] args)
         {
-            RPCServer rPCServer = new RPCServer(32030);
+            RPCServer rPCServer = new RPCServer(CommonHelper.DotNettyPort);
             rPCServer.RegisterService<IHello, Hello>();
             rPCServer.Start();
-            Console.WriteLine($"RpcServer started on {32030}");
 
+            Console.WriteLine($"RpcServer started on {CommonHelper.DotNettyPort}");
             Console.ReadLine();
         }
     }

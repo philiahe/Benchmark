@@ -1,12 +1,17 @@
-﻿using System;
+﻿using Common;
+using System;
 
 namespace DotNettyTest
 {
     public class Hello : IHello
     {
-        public void SayHello(string msg)
+        static int Count = 0;
+
+        public SayHelloResultArgs SayHello(SayHelloArgs args)
         {
-            Console.WriteLine(msg);
+            //Console.WriteLine(args.Name + Count++);
+
+            return new SayHelloResultArgs { Message = "Hello " + args.Name };
         }
     }
 }

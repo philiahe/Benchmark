@@ -14,10 +14,8 @@ namespace Common
         /// <returns>.</returns>
         public static IWebHostBuilder UseUrlPort(this IWebHostBuilder hostBuilder, string[] args)
         {
-            //
-            // 默认以本机IP:5010端口启动（使用Consul做服务注册，IP无法指定为*）
-            var ip = NetworkHelper.GetLocalIp();
-            string urls = $"http://{ip}:5010";
+            var ip = CommonHelper.GetLocalIp();
+            string urls = $"http://{ip}:{CommonHelper.WebApiPort}";
 
             if (args != null)
             {

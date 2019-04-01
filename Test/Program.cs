@@ -30,7 +30,7 @@ namespace Test
 {
     class Program
     {
-        static string ServerIp = "";
+        static string ServerIp;
         static int Times;
         static int ThreadCount;
         static Common.SayHelloArgs CommonArgs = new Common.SayHelloArgs { Name = "philia" };
@@ -40,6 +40,7 @@ namespace Test
             IConfiguration configuration = new ConfigurationBuilder().AddJsonFile($"appsettings.json").Build();
             Times = Convert.ToInt32(configuration["Times"]);
             ThreadCount = Convert.ToInt32(configuration["ThreadCount"]);
+            ServerIp = configuration["ServerIp"];
 
             //Grpc();
 
@@ -47,9 +48,9 @@ namespace Test
 
             //DotNettyTest();
 
-            Thrift();
+            //Thrift();
 
-            //HttpClient();
+            HttpClient();
             //HttpWebRequest();
 
             Console.ReadKey();
@@ -68,13 +69,13 @@ namespace Test
         /// </remark>
         static void Grpc()
         {
-            Channel channel = new Channel($"{LocalIp}:32000", ChannelCredentials.Insecure);
+            Channel channel = new Channel($"{ServerIp}:{CommonHelper.GrpcPort}", ChannelCredentials.Insecure);
             var client = new Helloworld.HelloworldClient(channel);
             var args = new GrpcTest.SayHelloArgs { Name = "philia" };
 
             CodeTimerPro.Start("Grpc", Times, p =>
             {
-                var result = client.SayHello(args);
+                var result = client.SayHelloAsync(args);
             }, ThreadCount);
 
             channel.ShutdownAsync().Wait();
@@ -117,7 +118,7 @@ namespace Test
             IClusterClient client;
             client = new ClientBuilder()
                 .UseLocalhostClustering()
-                .Configure<EndpointOptions>(options => { options.AdvertisedIPAddress = IPAddress.Parse(LocalIp); })
+                .Configure<EndpointOptions>(options => { options.AdvertisedIPAddress = IPAddress.Parse(ServerIp); })
                 .ConfigureLogging(logging => logging.AddConsole())
                 .Build();
 
@@ -129,28 +130,41 @@ namespace Test
 
         #region -- DotNetty --
 
+        /// <summary>
+        /// 微软
+        /// 
+        /// 需要封装
+        /// </summary>
         static void DotNettyTest()
         {
-            DotNettyTest.IHello client = RPCClientFactory.GetClient<DotNettyTest.IHello>("127.0.0.1", 32030);
+            DotNettyTest.IHello client = RPCClientFactory.GetClient<DotNettyTest.IHello>(ServerIp, CommonHelper.DotNettyPort);
             CodeTimerPro.Start("DotNetty", Times, _ =>
             {
-                client.SayHello("philia");
+                var result = client.SayHello(CommonArgs);
             }, ThreadCount);
         }
 
         #endregion
 
         #region -- Thrift --
+
+        /// <summary>
+        /// Facebook => Apahce
+        /// 跨平台
+        /// 缺点：无法生成async，await，Task<T>之类的泛型代码
+        /// 
+        /// Bug
+        /// </summary>
         static void Thrift()
         {
-            CodeTimerPro.Start("thrift", Times, _ =>
+            CodeTimerPro.Start("Thrift", Times, _ =>
             {
-                TTransport transport = new TSocket("127.0.0.1", 32040);
+                TTransport transport = new TSocket(ServerIp, CommonHelper.ThriftPort);
                 transport.Open();
                 TProtocol protocol = new TBinaryProtocol(transport);
                 using (Helloword.Client client = new Helloword.Client(protocol))
                 {
-                    var reply = client.SayHello(new SayHelloArgs { Name = "philia" });
+                    var result = client.SayHello(new SayHelloArgs { Name = "philia" });
                 }
                 transport.Close();
             }, ThreadCount);
@@ -169,15 +183,15 @@ namespace Test
 
             CodeTimerPro.Start("HttpClient", Times, _ =>
             {
-                var response =  client.PostAsync($"http://{LocalIp}:5010/api/Values", byteContent);
+                var response =  client.PostAsync($"http://{ServerIp}:{CommonHelper.WebApiPort}/api/Values", byteContent);
                 var result = response.Result.Content.ReadAsStringAsync().Result;
             }, ThreadCount);
         }
 
         static void HttpWebRequest()
         {
-            string url = $"http://{LocalIp}:5010/api/Values";
-           
+            string url = $"http://{ServerIp}:{CommonHelper.WebApiPort}/api/Values";
+
             CodeTimerPro.Start("HttpWebRequest", Times, _ =>
             {
                 HttpWebRequest webRequest = (HttpWebRequest)WebRequest.Create(new Uri(url));
