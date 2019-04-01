@@ -1,4 +1,11 @@
-﻿using Common;
+﻿using Coldairarrow.DotNettyRPC;
+using Common;
+using DotNetty.Codecs;
+using DotNetty.Handlers.Logging;
+using DotNetty.Transport.Bootstrapping;
+using DotNetty.Transport.Channels;
+using DotNetty.Transport.Channels.Sockets;
+using DotNettyTest;
 using Grpc.Core;
 using GrpcTest;
 using HelloWorld.Interfaces;
@@ -25,7 +32,7 @@ namespace Test
         static int ThreadCount;
         static Common.SayHelloArgs CommonArgs = new Common.SayHelloArgs { Name = "philia" };
 
-    static void Main(string[] args)
+        static void Main(string[] args)
         {
             IConfiguration configuration = new ConfigurationBuilder().AddJsonFile($"appsettings.json").Build();
             Times = Convert.ToInt32(configuration["Times"]);
@@ -36,7 +43,9 @@ namespace Test
             //Orleans();
 
             //HttpClient();
-            HttpWebRequest();
+            //HttpWebRequest();
+
+            DotNettyTest();
 
             Console.ReadKey();
         }
@@ -85,7 +94,7 @@ namespace Test
         {
             using (var client = await OrleansClient())
             {
-                var friend = client.GetGrain<IHello>(0);
+                var friend = client.GetGrain<HelloWorld.Interfaces.IHello>(0);
                 CodeTimerPro.Start("Orleans", Times, async _ =>
                 {
                     var result = await friend.SayHello(CommonArgs);
@@ -113,6 +122,20 @@ namespace Test
 
         #endregion
 
+        #region -- DotNetty --
+
+        static void DotNettyTest()
+        {
+            DotNettyTest.IHello client = RPCClientFactory.GetClient<DotNettyTest.IHello>("127.0.0.1", 32030);
+            CodeTimerPro.Start("DotNetty", Times, _ =>
+            {
+                client.SayHello("philia");
+            }, ThreadCount);
+        }
+
+        #endregion
+
+
         #region -- WebApi --
 
         static void HttpClient()
@@ -124,7 +147,7 @@ namespace Test
 
             CodeTimerPro.Start("HttpClient", Times, _ =>
             {
-                var response = client.PostAsync($"http://{LocalIp}:5010/api/Values", byteContent);
+                var response =  client.PostAsync($"http://{LocalIp}:5010/api/Values", byteContent);
                 var result = response.Result.Content.ReadAsStringAsync().Result;
             }, ThreadCount);
         }
