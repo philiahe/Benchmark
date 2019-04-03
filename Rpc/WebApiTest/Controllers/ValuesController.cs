@@ -11,7 +11,7 @@ namespace WebApiTest.Controllers
     public class ValuesController : ControllerBase
     {
         [HttpPost]
-        public SayHelloResultArgs Get(SayHelloArgs args)
+        public SayHelloResultArgs Get([FromBody]SayHelloArgs args)
         {
             return new SayHelloResultArgs { Message = $"Hello {args.Name}" };
 

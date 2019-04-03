@@ -33,6 +33,8 @@ namespace Common
         public int[] Gen { get; set; }
         /// <summary>执行时间</summary>
         public TimeSpan Elapsed { get; set; }
+        /// <summary>线程个数</summary>
+        public int ThreadCount { get; set; }
         #endregion
 
         #region -- 核心方法 --
@@ -41,13 +43,15 @@ namespace Common
         {
             ConsoleColor currentForeColor = Console.ForegroundColor;
             Console.ForegroundColor = ConsoleColor.Green;
-            Console.Write("{0,16}：\r\n", title);
+            Console.Write("{0}：\r\n", title);
 
             CodeTimerPro timer = new CodeTimerPro
             {
                 Times = times,
                 Action = action,
-                ShowProgress = true
+                ShowProgress = true,
+                ThreadCount = threadCount,
+
             };
             Console.ForegroundColor = ConsoleColor.Yellow;
             //timer.TimeOne();   //预热
@@ -181,12 +185,13 @@ namespace Common
         public virtual void EndExcute() { }
 
         /// <summary>
-        /// 输出依次分别是：执行时间、CPU线程时间、时钟周期、GC代数
+        /// 输出依次分别是：线程数和执行次数、执行时间、CPU线程时间、时钟周期、GC代数
         /// </summary>
         /// <returns></returns>
         public override string ToString()
         {
-            return String.Format("\tExcute Time:\t{0,7:n0}ms\r\n \tThread Time:\t{1,7:n0}ms\r\n \tCpuCycles:\t{2,17:n0}\r\n \tGC[Gen]:\t{3,6}/{4}/{5}\r\n", Elapsed.TotalMilliseconds, ThreadTime / 10000, CpuCycles, Gen[0], Gen[1], Gen[2]);
+            return String.Format("\t{6} Threads and {7} Times\r\n  \tTps:\t\t{8,7:n0}\r\n \tExcute Time:\t{0,7:n0}ms\r\n \tThread Time:\t{1,7:n0}ms\r\n \tCpuCycles:\t{2,17:n0}\r\n \tGC[Gen]:\t{3,6}/{4}/{5}\r\n"
+                , Elapsed.TotalMilliseconds, ThreadTime / 10000, CpuCycles, Gen[0], Gen[1], Gen[2], ThreadCount, Times, Convert.ToInt32(Times * 1000L / Elapsed.TotalMilliseconds));
         }
 
         #endregion
